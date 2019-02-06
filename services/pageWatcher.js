@@ -1,24 +1,16 @@
 const https = require('https');
 const cheerio = require('cheerio');
-const mailer = require('./mailer');
-
+const { reqOptions, domSelector } = require('../configs/metallica-config');
 class PageWatcher {
     constructor() {
         this.status = null;
-        this.reqOptions = {
-            hostname: 'msk.kassir.ru',
-            port: 443,
-            path: '/koncert/metallica',
-            method: 'GET'
-        };
-        this.domSelector = '.buy-block';
         this._init();
     }
 
     _init() {
         setInterval(() => {
             this._loadPage();
-        }, 30000);
+        }, 3000);
     }
 
     getStatus() {
@@ -26,7 +18,7 @@ class PageWatcher {
     }
 
     _loadPage() {
-        const req = https.request(this.reqOptions, res => {
+        const req = https.request(reqOptions, res => {
             let body = '';
 
             res.on('data', chunk => {
@@ -45,12 +37,7 @@ class PageWatcher {
 
     _parseBody(body) {
         const $ = cheerio.load(body);
-        this.status = $(this.domSelector).length > 0;
-        mailer(
-            this.status
-                ? 'There are some tickets on '
-                : 'There is no tickets avaliable on'
-        );
+        this.status = $(domSelector).length > 0;
     }
 }
 const PageWatcherInstance = new PageWatcher();
