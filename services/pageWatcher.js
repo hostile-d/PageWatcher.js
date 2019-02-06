@@ -1,68 +1,87 @@
 const https = require('https');
 const cheerio = require('cheerio');
-
+const moment = require('moment');
 const { reqOptions, domSelector } = require('../configs/metallica-config');
 const telegramUrl = require('../configs/telegram-config');
+const {
+    SUCCESS_UPDATE_INTERVAL,
+    FAIL_UPDATE_INTERVAL,
+    SUCCESS_TEXT,
+    FAIL_TEXT
+} = require('../configs/watcher-config');
 
-const TRUE_UPDATE_INTERVAL = 300000;
-const FALSE_UPDATE_INTERVAL = 1200000;
 class PageWatcher {
     constructor() {
-        this.status = null;
-        this.timeFromLastFalseStatus = 0;
-        this.successEndpoint = `${telegramUrl}&text=There%20are%20some%20tickets`;
-        this.failureEndpoint = `${telegramUrl}&text=There%20is%20no%20tickets`;
+        this.foundTickets = null;
+        this.lastUpdated = null;
+        this.sinceLastMessage = 0;
+        this.successEndpoint = `${telegramUrl}&text=${SUCCESS_TEXT}`;
+        this.failureEndpoint = `${telegramUrl}&text=${FAIL_TEXT}`;
         this._init();
     }
 
-    _init() {
-        setInterval(() => {
-            this._loadPage();
-            this.timeFromLastFalseStatus += TRUE_UPDATE_INTERVAL;
-        }, TRUE_UPDATE_INTERVAL);
+    getStatus() {
+        return this.foundTickets;
     }
 
-    getStatus() {
-        return this.status;
+    getTime() {
+        return this.lastUpdated;
+    }
+
+    _init() {
+        this._setCurrentTime();
+        setInterval(() => {
+            this.sinceLastMessage += SUCCESS_UPDATE_INTERVAL;
+            this._loadPage();
+        }, SUCCESS_UPDATE_INTERVAL);
     }
 
     _loadPage() {
         const req = https.request(reqOptions, res => {
             let body = '';
-
             res.on('data', chunk => {
                 body += chunk;
             });
             res.on('end', () => {
+                this._setCurrentTime();
                 this._parseBody(body);
             });
         });
 
-        req.on('error', e => {});
+        req.on('error', err => {
+            console.error(err.message);
+        });
         req.end();
     }
 
     _parseBody(body) {
         const $ = cheerio.load(body);
-        this.status = $(domSelector).length > 0;
+        this.foundTickets = $(domSelector).length > 0;
 
-        let url = null;
+        const sendFalse = this.sinceLastMessage >= FAIL_UPDATE_INTERVAL;
 
-        console.log(this.status);
-        if (this.status) {
-            url = this.successEndpoint;
-        } else if (
-            !this.status &&
-            this.timeFromLastFalseStatus > FALSE_UPDATE_INTERVAL
-        ) {
-            url = this.failureEndpoint;
-            this.timeFromLastFalseStatus = 0;
-        } else {
-            return;
+        if (this.foundTickets) {
+            this._sendMessage(this.successEndpoint);
+        } else if (!this.foundTickets && sendFalse) {
+            this._sendMessage(this.failureEndpoint);
         }
-        https.get(url).on('error', err => {
-            console.log('Error: ' + err.message);
+    }
+
+    _sendMessage(url) {
+        const req = https.get(url, res => {
+            res.on('data', data => {
+                if (data.ok) {
+                    this.sinceLastMessage = 0;
+                }
+            });
         });
+        req.on('error', err => {
+            console.error(err.message);
+        });
+    }
+
+    _setCurrentTime() {
+        this.lastUpdated = moment().format('LLL');
     }
 }
 const PageWatcherInstance = new PageWatcher();
