@@ -1,17 +1,25 @@
 const https = require('https');
 const cheerio = require('cheerio');
-const { reqOptions, domSelector } = require('../configs/metallica-config');
 
+const { reqOptions, domSelector } = require('../configs/metallica-config');
+const telegramUrl = require('../configs/telegram-config');
+
+const TRUE_UPDATE_INTERVAL = 300000;
+const FALSE_UPDATE_INTERVAL = 1200000;
 class PageWatcher {
     constructor() {
         this.status = null;
+        this.timeFromLastFalseStatus = 0;
+        this.successEndpoint = `${telegramUrl}&text=There%20are%20some%20tickets`;
+        this.failureEndpoint = `${telegramUrl}&text=There%20is%20no%20tickets`;
         this._init();
     }
 
     _init() {
         setInterval(() => {
             this._loadPage();
-        }, 0000);
+            this.timeFromLastFalseStatus += TRUE_UPDATE_INTERVAL;
+        }, TRUE_UPDATE_INTERVAL);
     }
 
     getStatus() {
@@ -30,9 +38,7 @@ class PageWatcher {
             });
         });
 
-        req.on('error', e => {
-            console.error(e);
-        });
+        req.on('error', e => {});
         req.end();
     }
 
@@ -40,17 +46,22 @@ class PageWatcher {
         const $ = cheerio.load(body);
         this.status = $(domSelector).length > 0;
 
-        const token = '669688833:AAEr1hz0F9lhOKkZqg_65SrcCSeY4MAapq8';
-        const recipient = 'hostile_d' ;
+        let url = null;
 
-
-        const req = https.request({
-            hostname: 'api.telegram.org',
-            path:
-                `/bot${token}/sendMessage?chat_id=${recipient}&text=${this.status}`,
-            method: 'GET'
-        }).on('error', e => {
-            console.error(e);
+        console.log(this.status);
+        if (this.status) {
+            url = this.successEndpoint;
+        } else if (
+            !this.status &&
+            this.timeFromLastFalseStatus > FALSE_UPDATE_INTERVAL
+        ) {
+            url = this.failureEndpoint;
+            this.timeFromLastFalseStatus = 0;
+        } else {
+            return;
+        }
+        https.get(url).on('error', err => {
+            console.log('Error: ' + err.message);
         });
     }
 }
