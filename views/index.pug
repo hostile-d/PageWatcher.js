@@ -3,5 +3,5 @@ extends layout
 block content
   h1= title
   a(href=url)= url
-  p Updated: #{time}
+  p Last time updated #{moment(time).local().fromNow()}
   img(url=imgUrl)

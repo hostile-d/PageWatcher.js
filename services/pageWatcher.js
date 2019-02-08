@@ -1,6 +1,5 @@
 const https = require('https');
 const cheerio = require('cheerio');
-const moment = require('moment');
 const { reqOptions, domSelector } = require('../configs/metallica-config');
 const telegramUrl = require('../configs/telegram-config');
 const {
@@ -31,7 +30,6 @@ class PageWatcher {
     _init() {
         this._setCurrentTime();
         setInterval(() => {
-            this.sinceLastMessage += SUCCESS_UPDATE_INTERVAL;
             this._loadPage();
         }, SUCCESS_UPDATE_INTERVAL);
     }
@@ -58,6 +56,7 @@ class PageWatcher {
         const $ = cheerio.load(body);
         this.foundTickets = $(domSelector).length > 0;
 
+        this.sinceLastMessage += SUCCESS_UPDATE_INTERVAL;
         const sendFalse = this.sinceLastMessage >= FAIL_UPDATE_INTERVAL;
 
         if (this.foundTickets) {
@@ -68,6 +67,7 @@ class PageWatcher {
     }
 
     _sendMessage(url) {
+        this.sinceLastMessage = 0;
         const req = https.get(url, res => {
             res.on('data', data => {
                 if (data.ok) {
@@ -81,7 +81,7 @@ class PageWatcher {
     }
 
     _setCurrentTime() {
-        this.lastUpdated = moment().format('LLL');
+        this.lastUpdated = new Date().getTime();
     }
 }
 const PageWatcherInstance = new PageWatcher();
