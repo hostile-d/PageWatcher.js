@@ -2,20 +2,14 @@ const https = require('https');
 const cheerio = require('cheerio');
 const { reqOptions, domSelector } = require('../configs/metallica-config');
 const { telegramUrl } = require('../configs/telegram-config');
-const {
-    SUCCESS_UPDATE_INTERVAL,
-    FAIL_UPDATE_INTERVAL,
-    SUCCESS_TEXT,
-    FAIL_TEXT
-} = require('../configs/watcher-config');
+const { UPDATE_INTERVAL, SUCCESS_TEXT } = require('../configs/watcher-config');
 
 class PageWatcher {
     constructor() {
-        this.foundTickets = null;
+        this.foundTickets = false;
         this.lastUpdated = null;
         this.sinceLastMessage = 0;
         this.successEndpoint = `${telegramUrl}&text=${SUCCESS_TEXT}`;
-        this.failureEndpoint = `${telegramUrl}&text=${FAIL_TEXT}`;
         this._init();
     }
 
@@ -31,7 +25,7 @@ class PageWatcher {
         this._setCurrentTime();
         setInterval(() => {
             this._loadPage();
-        }, SUCCESS_UPDATE_INTERVAL);
+        }, UPDATE_INTERVAL);
     }
 
     _loadPage() {
@@ -56,18 +50,14 @@ class PageWatcher {
         const $ = cheerio.load(body);
         this.foundTickets = $(domSelector).length > 0;
 
-        this.sinceLastMessage += SUCCESS_UPDATE_INTERVAL;
-        const sendFalse = this.sinceLastMessage >= FAIL_UPDATE_INTERVAL;
+        this.sinceLastMessage += UPDATE_INTERVAL;
 
         if (this.foundTickets) {
             this._sendMessage(this.successEndpoint);
-        } else if (!this.foundTickets && sendFalse) {
-            this._sendMessage(this.failureEndpoint);
         }
     }
 
     _sendMessage(url) {
-        this.sinceLastMessage = 0;
         const req = https.get(url, res => {
             res.on('data', data => {
                 if (data.ok) {
