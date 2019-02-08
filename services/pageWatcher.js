@@ -1,7 +1,7 @@
 const https = require('https');
 const cheerio = require('cheerio');
 const { reqOptions, domSelector } = require('../configs/metallica-config');
-const telegramUrl = require('../configs/telegram-config');
+const { telegramUrl } = require('../configs/telegram-config');
 const {
     SUCCESS_UPDATE_INTERVAL,
     FAIL_UPDATE_INTERVAL,
