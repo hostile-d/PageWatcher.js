@@ -6,5 +6,6 @@ if (process.env.BOT_TOKEN) {
 }
 
 const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=-284006908`;
+const groupLink = 'https://t.me/joinchat/EzpbLRDtmfww-grbZZVszA';
 
-module.exports = telegramUrl;
+module.exports = { telegramUrl, groupLink };

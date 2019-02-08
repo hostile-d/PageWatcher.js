@@ -1,5 +1,6 @@
 const pageWatcher = require('../services/pageWatcher');
 const { reqOptions } = require('../configs/metallica-config');
+const { groupLink } = require('../configs/telegram-config');
 exports.getWebpage = async (req, res) => {
     const isSelling = pageWatcher.getStatus();
     const time = pageWatcher.getTime();
@@ -8,6 +9,7 @@ exports.getWebpage = async (req, res) => {
             ? 'There are some tickets on '
             : 'There is no tickets avaliable on',
         url: `https://${reqOptions.hostname}${reqOptions.path}`,
-        time
+        time,
+        groupLink
     });
 };
