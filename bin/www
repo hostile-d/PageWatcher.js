@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 require('dotenv').config({ path: __dirname + '/../variables.env' });
+var compression = require('compression');
+var helmet = require('helmet');
 /**
  * Module dependencies.
  */
@@ -8,6 +10,9 @@ require('dotenv').config({ path: __dirname + '/../variables.env' });
 var app = require('../app');
 var debug = require('debug')('parse-kassirru:server');
 var http = require('http');
+
+app.use(helmet());
+app.use(compression())
 
 /**
  * Get port from environment and store in Express.

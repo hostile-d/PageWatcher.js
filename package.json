@@ -8,10 +8,12 @@
     },
     "dependencies": {
         "cheerio": "^1.0.0-rc.2",
+        "compression": "^1.7.3",
         "cookie-parser": "~1.4.3",
         "debug": "~2.6.9",
         "dotenv": "^6.2.0",
         "express": "~4.16.0",
+        "helmet": "^3.15.1",
         "http-errors": "~1.6.2",
         "moment": "^2.24.0",
         "morgan": "~1.9.0",
